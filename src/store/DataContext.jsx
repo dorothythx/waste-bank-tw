@@ -52,17 +52,19 @@ export function validateDataAction(state, action) {
     case 'ADD_SALE': {
       const { buyer, wasteTypeId, quantity } = action.payload;
       const wasteType = getWasteType(wasteTypeId);
-      const currentStock = selectStockFor(state, wasteTypeId);
-      const buyerValid = MOCK_BUYERS.includes(buyer);
       const quantityValid = Number.isFinite(Number(quantity)) && Number(quantity) > 0;
+      const buyerValid = MOCK_BUYERS.includes(buyer);
 
+      if (!wasteType || !quantityValid || !buyerValid) {
+        return 'ข้อมูลการขายไม่ถูกต้อง';
+      }
+
+      const currentStock = selectStockFor(state, wasteTypeId);
       if (Number(quantity) > currentStock) {
         return 'จำนวนที่ขายมากกว่าสินค้าคงเหลือ';
       }
 
-      return !buyerValid || !wasteType || !quantityValid
-        ? 'ข้อมูลการขายไม่ถูกต้อง'
-        : '';
+      return '';
     }
 
     case 'ADD_WITHDRAWAL': {
@@ -265,7 +267,7 @@ export function DataProvider({ children }) {
       <DataDispatchContext.Provider value={dispatch}>
         {children}
       </DataDispatchContext.Provider>
-    </DataStateContext.Provider>
+    </DataProvider>
   );
 }
 
