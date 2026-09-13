@@ -41,7 +41,13 @@ export default function Withdrawal() {
   };
 
   const handleConfirm = () => {
-    dispatch({ type: 'ADD_WITHDRAWAL', payload: { memberId, amount: amountNum } });
+    try {
+      dispatch({ type: 'ADD_WITHDRAWAL', payload: { memberId, amount: amountNum } });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'ไม่สามารถบันทึกการถอนเงินได้');
+      setConfirmOpen(false);
+      return;
+    }
     setConfirmOpen(false);
     setSuccess(`บันทึกการถอนเงิน ${formatCurrency(amountNum)} ให้ ${member.name} เรียบร้อยแล้ว`);
     setAmount('');
