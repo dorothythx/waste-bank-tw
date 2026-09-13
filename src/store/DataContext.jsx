@@ -4,7 +4,7 @@ import {
   INITIAL_TRANSACTIONS,
   INITIAL_EXPENSES,
 } from '../data/mockData';
-import { WASTE_TYPES, getWasteType } from '../data/wasteTypes';
+import { WASTE_TYPES, getWasteType, MOCK_BUYERS } from '../data/wasteTypes';
 import { nextMemberId, nextEntityId } from '../utils/idGenerator';
 import { todayIso } from '../utils/format';
 
@@ -40,6 +40,22 @@ function reducer(state, action) {
     case 'ADD_PURCHASE': {
       // payload: { memberId, items: [{ wasteTypeId, quantity }] }
       const { memberId, items } = action.payload;
+      const memberExists = state.members.some((member) => member.id === memberId);
+      const itemsValid =
+        Array.isArray(items) &&
+        items.length > 0 &&
+        items.every(
+          (item) =>
+            item &&
+            getWasteType(item.wasteTypeId) &&
+            Number.isFinite(Number(item.quantity)) &&
+            Number(item.quantity) > 0
+        );
+
+      if (!memberExists || !itemsValid) {
+        throw new Error('ข้อมูลการรับซื้อไม่ถูกต้อง');
+      }
+
       const reference = nextEntityId('PUR-', collectRefs(state.transactions, 'PUR-'));
       let runningBalance = getMemberBalanceFromTx(state.transactions, memberId);
       const date = todayIso();
@@ -71,6 +87,18 @@ function reducer(state, action) {
     case 'ADD_SALE': {
       const { buyer, wasteTypeId, quantity } = action.payload;
       const wasteType = getWasteType(wasteTypeId);
+      const currentStock = selectStockFor(state, wasteTypeId);
+      const buyerValid = MOCK_BUYERS.includes(buyer);
+      const quantityValid = Number.isFinite(Number(quantity)) && Number(quantity) > 0;
+
+      if (!buyerValid || !wasteType || !quantityValid || Number(quantity) > currentStock) {
+        throw new Error(
+          Number(quantity) > currentStock
+            ? 'จำนวนที่ขายมากกว่าสินค้าคงเหลือ'
+            : 'ข้อมูลการขายไม่ถูกต้อง'
+        );
+      }
+
       const amount = Number(quantity) * wasteType.salePrice;
       const reference = nextEntityId('SALE-', collectRefs(state.transactions, 'SALE-'));
       const tx = {
@@ -94,7 +122,18 @@ function reducer(state, action) {
     }
     case 'ADD_WITHDRAWAL': {
       const { memberId, amount } = action.payload;
+      const memberExists = state.members.some((member) => member.id === memberId);
+      const amountValid = Number.isFinite(Number(amount)) && Number(amount) > 0;
       const currentBalance = getMemberBalanceFromTx(state.transactions, memberId);
+
+      if (!memberExists || !amountValid || Number(amount) > currentBalance) {
+        throw new Error(
+          Number(amount) > currentBalance
+            ? 'จำนวนเงินที่ถอนเกินยอดเงินคงเหลือ'
+            : 'ข้อมูลการถอนเงินไม่ถูกต้อง'
+        );
+      }
+
       const reference = nextEntityId('WD-', collectRefs(state.transactions, 'WD-'));
       const tx = {
         id: nextEntityId('TX', state.transactions),
@@ -116,9 +155,21 @@ function reducer(state, action) {
     }
     case 'ADD_EXPENSE': {
       const { category, description, amount, date } = action.payload;
+      const dateValid =
+        typeof date === 'string' &&
+        date.trim() !== '' &&
+        !Number.isNaN(new Date(`${date}T00:00:00`).getTime());
+      const categoryValid = typeof category === 'string' && category.trim() !== '';
+      const descriptionValid = typeof description === 'string' && description.trim() !== '';
+      const amountValid = Number.isFinite(Number(amount)) && Number(amount) > 0;
+
+      if (!dateValid || !categoryValid || !descriptionValid || !amountValid) {
+        throw new Error('ข้อมูลค่าใช้จ่ายไม่ถูกต้อง');
+      }
+
       const expense = {
         id: nextEntityId('EX', state.expenses),
-        date: date || todayIso(),
+        date,
         category,
         description,
         amount: Number(amount),
