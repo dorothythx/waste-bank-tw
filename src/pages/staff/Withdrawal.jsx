@@ -5,7 +5,7 @@ import { PageHeader } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Modal from '../../components/ui/Modal';
-import { useDataStore, selectMembersWithBalance } from '../../store/DataContext';
+import { useDataStore, selectMembersWithBalance, validateDataAction } from '../../store/DataContext';
 import { formatCurrency } from '../../utils/format';
 
 export default function Withdrawal() {
@@ -41,13 +41,15 @@ export default function Withdrawal() {
   };
 
   const handleConfirm = () => {
-    try {
-      dispatch({ type: 'ADD_WITHDRAWAL', payload: { memberId, amount: amountNum } });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'ไม่สามารถบันทึกการถอนเงินได้');
+    const action = { type: 'ADD_WITHDRAWAL', payload: { memberId, amount: amountNum } };
+    const validationError = validateDataAction(state, action);
+    if (validationError) {
+      setError(validationError);
       setConfirmOpen(false);
       return;
     }
+
+    dispatch(action);
     setConfirmOpen(false);
     setSuccess(`บันทึกการถอนเงิน ${formatCurrency(amountNum)} ให้ ${member.name} เรียบร้อยแล้ว`);
     setAmount('');
