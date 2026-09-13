@@ -30,15 +30,9 @@ function getMemberBalanceFromTx(transactions, memberId) {
     .reduce((sum, t) => sum + (t.credit || 0) - (t.debit || 0), 0);
 }
 
-function reducer(state, action) {
+export function validateDataAction(state, action) {
   switch (action.type) {
-    case 'ADD_MEMBER': {
-      const id = nextMemberId(state.members);
-      const member = { id, name: action.payload.name, phone: action.payload.phone };
-      return { ...state, members: [...state.members, member] };
-    }
     case 'ADD_PURCHASE': {
-      // payload: { memberId, items: [{ wasteTypeId, quantity }] }
       const { memberId, items } = action.payload;
       const memberExists = state.members.some((member) => member.id === memberId);
       const itemsValid =
@@ -52,10 +46,75 @@ function reducer(state, action) {
             Number(item.quantity) > 0
         );
 
-      if (!memberExists || !itemsValid) {
-        throw new Error('ข้อมูลการรับซื้อไม่ถูกต้อง');
+      return !memberExists || !itemsValid ? 'ข้อมูลการรับซื้อไม่ถูกต้อง' : '';
+    }
+
+    case 'ADD_SALE': {
+      const { buyer, wasteTypeId, quantity } = action.payload;
+      const wasteType = getWasteType(wasteTypeId);
+      const currentStock = selectStockFor(state, wasteTypeId);
+      const buyerValid = MOCK_BUYERS.includes(buyer);
+      const quantityValid = Number.isFinite(Number(quantity)) && Number(quantity) > 0;
+
+      if (Number(quantity) > currentStock) {
+        return 'จำนวนที่ขายมากกว่าสินค้าคงเหลือ';
       }
 
+      return !buyerValid || !wasteType || !quantityValid
+        ? 'ข้อมูลการขายไม่ถูกต้อง'
+        : '';
+    }
+
+    case 'ADD_WITHDRAWAL': {
+      const { memberId, amount } = action.payload;
+      const memberExists = state.members.some((member) => member.id === memberId);
+      const amountValid = Number.isFinite(Number(amount)) && Number(amount) > 0;
+      const currentBalance = getMemberBalanceFromTx(state.transactions, memberId);
+
+      if (Number(amount) > currentBalance) {
+        return 'จำนวนเงินที่ถอนเกินยอดเงินคงเหลือ';
+      }
+
+      return !memberExists || !amountValid
+        ? 'ข้อมูลการถอนเงินไม่ถูกต้อง'
+        : '';
+    }
+
+    case 'ADD_EXPENSE': {
+      const { category, description, amount, date } = action.payload;
+      const dateValid =
+        typeof date === 'string' &&
+        date.trim() !== '' &&
+        !Number.isNaN(new Date(`${date}T00:00:00`).getTime());
+      const categoryValid = typeof category === 'string' && category.trim() !== '';
+      const descriptionValid = typeof description === 'string' && description.trim() !== '';
+      const amountValid = Number.isFinite(Number(amount)) && Number(amount) > 0;
+
+      return !dateValid || !categoryValid || !descriptionValid || !amountValid
+        ? 'ข้อมูลค่าใช้จ่ายไม่ถูกต้อง'
+        : '';
+    }
+
+    default:
+      return '';
+  }
+}
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'ADD_MEMBER': {
+      const id = nextMemberId(state.members);
+      const member = { id, name: action.payload.name, phone: action.payload.phone };
+      return { ...state, members: [...state.members, member] };
+    }
+    case 'ADD_PURCHASE': {
+      // payload: { memberId, items: [{ wasteTypeId, quantity }] }
+      const validationError = validateDataAction(state, action);
+      if (validationError) {
+        throw new Error(validationError);
+      }
+
+      const { memberId, items } = action.payload;
       const reference = nextEntityId('PUR-', collectRefs(state.transactions, 'PUR-'));
       let runningBalance = getMemberBalanceFromTx(state.transactions, memberId);
       const date = todayIso();
@@ -85,20 +144,13 @@ function reducer(state, action) {
       return { ...state, transactions: [...state.transactions, ...withUniqueIds] };
     }
     case 'ADD_SALE': {
-      const { buyer, wasteTypeId, quantity } = action.payload;
-      const wasteType = getWasteType(wasteTypeId);
-      const currentStock = selectStockFor(state, wasteTypeId);
-      const buyerValid = MOCK_BUYERS.includes(buyer);
-      const quantityValid = Number.isFinite(Number(quantity)) && Number(quantity) > 0;
-
-      if (!buyerValid || !wasteType || !quantityValid || Number(quantity) > currentStock) {
-        throw new Error(
-          Number(quantity) > currentStock
-            ? 'จำนวนที่ขายมากกว่าสินค้าคงเหลือ'
-            : 'ข้อมูลการขายไม่ถูกต้อง'
-        );
+      const validationError = validateDataAction(state, action);
+      if (validationError) {
+        throw new Error(validationError);
       }
 
+      const { buyer, wasteTypeId, quantity } = action.payload;
+      const wasteType = getWasteType(wasteTypeId);
       const amount = Number(quantity) * wasteType.salePrice;
       const reference = nextEntityId('SALE-', collectRefs(state.transactions, 'SALE-'));
       const tx = {
@@ -121,19 +173,13 @@ function reducer(state, action) {
       return { ...state, transactions: [...state.transactions, tx] };
     }
     case 'ADD_WITHDRAWAL': {
-      const { memberId, amount } = action.payload;
-      const memberExists = state.members.some((member) => member.id === memberId);
-      const amountValid = Number.isFinite(Number(amount)) && Number(amount) > 0;
-      const currentBalance = getMemberBalanceFromTx(state.transactions, memberId);
-
-      if (!memberExists || !amountValid || Number(amount) > currentBalance) {
-        throw new Error(
-          Number(amount) > currentBalance
-            ? 'จำนวนเงินที่ถอนเกินยอดเงินคงเหลือ'
-            : 'ข้อมูลการถอนเงินไม่ถูกต้อง'
-        );
+      const validationError = validateDataAction(state, action);
+      if (validationError) {
+        throw new Error(validationError);
       }
 
+      const { memberId, amount } = action.payload;
+      const currentBalance = getMemberBalanceFromTx(state.transactions, memberId);
       const reference = nextEntityId('WD-', collectRefs(state.transactions, 'WD-'));
       const tx = {
         id: nextEntityId('TX', state.transactions),
@@ -154,19 +200,12 @@ function reducer(state, action) {
       return { ...state, transactions: [...state.transactions, tx] };
     }
     case 'ADD_EXPENSE': {
-      const { category, description, amount, date } = action.payload;
-      const dateValid =
-        typeof date === 'string' &&
-        date.trim() !== '' &&
-        !Number.isNaN(new Date(`${date}T00:00:00`).getTime());
-      const categoryValid = typeof category === 'string' && category.trim() !== '';
-      const descriptionValid = typeof description === 'string' && description.trim() !== '';
-      const amountValid = Number.isFinite(Number(amount)) && Number(amount) > 0;
-
-      if (!dateValid || !categoryValid || !descriptionValid || !amountValid) {
-        throw new Error('ข้อมูลค่าใช้จ่ายไม่ถูกต้อง');
+      const validationError = validateDataAction(state, action);
+      if (validationError) {
+        throw new Error(validationError);
       }
 
+      const { category, description, amount, date } = action.payload;
       const expense = {
         id: nextEntityId('EX', state.expenses),
         date,
