@@ -254,17 +254,26 @@ export function selectTotals(state) {
   const totalPurchaseValue = state.transactions
     .filter((t) => t.type === 'purchase' && !t.isOpeningStock)
     .reduce((sum, t) => sum + (t.amount || 0), 0);
+
   const totalSalesValue = state.transactions
     .filter((t) => t.type === 'sale')
     .reduce((sum, t) => sum + (t.amount || 0), 0);
-  const totalExpenses = state.expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+  const totalExpenses = state.expenses.reduce(
+    (sum, e) => sum + (e.amount || 0),
+    0
+  );
+
   return {
     memberCount: state.members.length,
     totalPurchaseQuantity,
     totalPurchaseValue,
     totalSalesValue,
     totalExpenses,
-    totalStock: selectInventory(state).reduce((sum, i) => sum + i.quantity, 0),
+    totalStock: selectInventory(state).reduce(
+      (sum, i) => sum + i.quantity,
+      0
+    ),
   };
 }
 
