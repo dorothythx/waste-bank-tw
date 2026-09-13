@@ -267,7 +267,7 @@ export function DataProvider({ children }) {
       <DataDispatchContext.Provider value={dispatch}>
         {children}
       </DataDispatchContext.Provider>
-    </DataProvider>
+    </DataStateContext.Provider>
   );
 }
 
