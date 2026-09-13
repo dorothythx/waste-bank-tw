@@ -28,34 +28,53 @@ export default function Expenses() {
   const [success, setSuccess] = useState('');
 
   const resetForm = () => {
-  setDate(todayIso());
-  setCategory(EXPENSE_CATEGORIES[0]);
-  setDescription('');
-  setAmount('');
-};
+    setDate(todayIso());
+    setCategory(EXPENSE_CATEGORIES[0]);
+    setDescription('');
+    setAmount('');
+  };
 
   const handleSubmit = (e) => {
+    e.preventDefault();
+
     if (!date) {
-  setError('กรุณาเลือกวันที่');
-  return;
-}
-  e.preventDefault();
+      setError('กรุณาเลือกวันที่');
+      return;
+    }
+
     if (!category) {
       setError('กรุณาเลือกประเภทค่าใช้จ่าย');
       return;
     }
+
     if (!description.trim()) {
       setError('กรุณากรอกรายละเอียด');
       return;
     }
+
     const amountNum = Number(amount);
+
     if (!amount || Number.isNaN(amountNum) || amountNum <= 0) {
       setError('จำนวนเงินต้องเป็นตัวเลขที่มากกว่า 0');
       return;
     }
+
     setError('');
-    dispatch({ type: 'ADD_EXPENSE', payload: { date, category, description: description.trim(), amount: amountNum } });
-    setSuccess(`บันทึกค่าใช้จ่าย "${description.trim()}" จำนวน ${formatCurrency(amountNum)} เรียบร้อยแล้ว`);
+
+    dispatch({
+      type: 'ADD_EXPENSE',
+      payload: {
+        date,
+        category,
+        description: description.trim(),
+        amount: amountNum,
+      },
+    });
+
+    setSuccess(
+      `บันทึกค่าใช้จ่าย "${description.trim()}" จำนวน ${formatCurrency(amountNum)} เรียบร้อยแล้ว`
+    );
+
     resetForm();
     setTimeout(() => setSuccess(''), 4000);
   };
@@ -64,7 +83,12 @@ export default function Expenses() {
     { key: 'date', header: 'วันที่', render: (r) => formatDate(r.date) },
     { key: 'category', header: 'ประเภท' },
     { key: 'description', header: 'รายละเอียด' },
-    { key: 'amount', header: 'จำนวนเงิน', align: 'right', render: (r) => formatCurrency(r.amount) },
+    {
+      key: 'amount',
+      header: 'จำนวนเงิน',
+      align: 'right',
+      render: (r) => formatCurrency(r.amount),
+    },
   ];
 
   return (
@@ -78,24 +102,33 @@ export default function Expenses() {
       {error && <Alert type="error">{error}</Alert>}
 
       <div className="section">
-        <StatCard label="ค่าใช้จ่ายทั้งหมด" value={formatCurrency(totals.totalExpenses)} />
+        <StatCard
+          label="ค่าใช้จ่ายทั้งหมด"
+          value={formatCurrency(totals.totalExpenses)}
+        />
       </div>
 
       <form onSubmit={handleSubmit} className="card section">
-        <div className="field">
-  <label htmlFor="date">วันที่</label>
-  <input
-    id="date"
-    type="date"
-    value={date}
-    onChange={(e) => setDate(e.target.value)}
-  />
-</div>
         <h3 className="card-title">เพิ่มรายการค่าใช้จ่าย</h3>
+
         <div className="form-row">
           <div className="field" style={{ marginBottom: 0 }}>
+            <label htmlFor="date">วันที่</label>
+            <input
+              id="date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+
+          <div className="field" style={{ marginBottom: 0 }}>
             <label htmlFor="category">ประเภทค่าใช้จ่าย</label>
-            <select id="category" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
               {EXPENSE_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -103,6 +136,7 @@ export default function Expenses() {
               ))}
             </select>
           </div>
+
           <div className="field" style={{ marginBottom: 0 }}>
             <label htmlFor="amount">จำนวนเงิน</label>
             <input
@@ -116,6 +150,7 @@ export default function Expenses() {
             />
           </div>
         </div>
+
         <div className="field" style={{ marginTop: 16 }}>
           <label htmlFor="description">รายละเอียด</label>
           <input
@@ -125,6 +160,7 @@ export default function Expenses() {
             placeholder="เช่น ซื้อถุงมือสำหรับคัดแยกขยะ"
           />
         </div>
+
         <div className="form-actions">
           <Button type="submit">
             <Save size={16} />
@@ -135,7 +171,11 @@ export default function Expenses() {
 
       <div className="section">
         <h3 className="section-title">รายการค่าใช้จ่ายทั้งหมด</h3>
-        <Table columns={columns} rows={expenses} emptyTitle="ยังไม่มีรายการค่าใช้จ่าย" />
+        <Table
+          columns={columns}
+          rows={expenses}
+          emptyTitle="ยังไม่มีรายการค่าใช้จ่าย"
+        />
       </div>
     </AppLayout>
   );
