@@ -5,7 +5,7 @@ import { PageHeader, StatCard } from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import { useDataStore, selectExpensesSorted, selectTotals } from '../../store/DataContext';
+import { useDataStore, selectExpensesSorted, selectTotals, validateDataAction } from '../../store/DataContext';
 import { EXPENSE_CATEGORIES } from '../../data/wasteTypes';
 import { formatCurrency, formatDate } from '../../utils/format';
 
@@ -61,20 +61,22 @@ export default function Expenses() {
 
     setError('');
 
-    try {
-      dispatch({
-        type: 'ADD_EXPENSE',
-        payload: {
-          date,
-          category,
-          description: description.trim(),
-          amount: amountNum,
-        },
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'ไม่สามารถบันทึกค่าใช้จ่ายได้');
+    const action = {
+      type: 'ADD_EXPENSE',
+      payload: {
+        date,
+        category,
+        description: description.trim(),
+        amount: amountNum,
+      },
+    };
+    const validationError = validateDataAction(state, action);
+    if (validationError) {
+      setError(validationError);
       return;
     }
+
+    dispatch(action);
 
     setSuccess(
       `บันทึกค่าใช้จ่าย "${description.trim()}" จำนวน ${formatCurrency(amountNum)} เรียบร้อยแล้ว`
