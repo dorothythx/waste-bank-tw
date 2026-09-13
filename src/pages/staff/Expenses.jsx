@@ -61,15 +61,20 @@ export default function Expenses() {
 
     setError('');
 
-    dispatch({
-      type: 'ADD_EXPENSE',
-      payload: {
-        date,
-        category,
-        description: description.trim(),
-        amount: amountNum,
-      },
-    });
+    try {
+      dispatch({
+        type: 'ADD_EXPENSE',
+        payload: {
+          date,
+          category,
+          description: description.trim(),
+          amount: amountNum,
+        },
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'ไม่สามารถบันทึกค่าใช้จ่ายได้');
+      return;
+    }
 
     setSuccess(
       `บันทึกค่าใช้จ่าย "${description.trim()}" จำนวน ${formatCurrency(amountNum)} เรียบร้อยแล้ว`
