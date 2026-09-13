@@ -5,7 +5,7 @@ import { PageHeader } from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import { useDataStore, selectMembersWithBalance } from '../../store/DataContext';
+import { useDataStore, selectMembersWithBalance, validateDataAction } from '../../store/DataContext';
 import { WASTE_TYPES, getWasteType } from '../../data/wasteTypes';
 import { formatCurrency, formatNumber } from '../../utils/format';
 
@@ -64,18 +64,20 @@ export default function Purchase() {
       return;
     }
 
-    try {
-      dispatch({
-        type: 'ADD_PURCHASE',
-        payload: {
-          memberId,
-          items: previewRows.map((r) => ({ wasteTypeId: r.wasteTypeId, quantity: Number(r.quantity) })),
-        },
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'ไม่สามารถบันทึกการรับซื้อได้');
+    const action = {
+      type: 'ADD_PURCHASE',
+      payload: {
+        memberId,
+        items: previewRows.map((r) => ({ wasteTypeId: r.wasteTypeId, quantity: Number(r.quantity) })),
+      },
+    };
+    const validationError = validateDataAction(state, action);
+    if (validationError) {
+      setError(validationError);
       return;
     }
+
+    dispatch(action);
 
     setSuccess(`บันทึกการรับซื้อขยะจาก ${member?.name} เรียบร้อยแล้ว รวม ${formatCurrency(grandTotal)}`);
     resetForm();
