@@ -64,13 +64,18 @@ export default function Purchase() {
       return;
     }
 
-    dispatch({
-      type: 'ADD_PURCHASE',
-      payload: {
-        memberId,
-        items: previewRows.map((r) => ({ wasteTypeId: r.wasteTypeId, quantity: Number(r.quantity) })),
-      },
-    });
+    try {
+      dispatch({
+        type: 'ADD_PURCHASE',
+        payload: {
+          memberId,
+          items: previewRows.map((r) => ({ wasteTypeId: r.wasteTypeId, quantity: Number(r.quantity) })),
+        },
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'ไม่สามารถบันทึกการรับซื้อได้');
+      return;
+    }
 
     setSuccess(`บันทึกการรับซื้อขยะจาก ${member?.name} เรียบร้อยแล้ว รวม ${formatCurrency(grandTotal)}`);
     resetForm();
