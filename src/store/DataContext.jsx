@@ -218,11 +218,21 @@ export function selectRecentTransactions(state, limit = 8) {
 export function selectInventory(state) {
   return WASTE_TYPES.map((wasteType) => {
     const purchased = state.transactions
-      .filter((t) => t.type === 'purchase' && t.wasteTypeId === wasteType.id)
+      .filter(
+        (t) =>
+          t.type === 'purchase' &&
+          t.wasteTypeId === wasteType.id
+      )
       .reduce((sum, t) => sum + (t.quantity || 0), 0);
+
     const sold = state.transactions
-      .filter((t) => t.type === 'sale' && t.wasteTypeId === wasteType.id)
+      .filter(
+        (t) =>
+          t.type === 'sale' &&
+          t.wasteTypeId === wasteType.id
+      )
       .reduce((sum, t) => sum + (t.quantity || 0), 0);
+
     return {
       ...wasteType,
       quantity: purchased - sold,
@@ -238,22 +248,32 @@ export function selectStockFor(state, wasteTypeId) {
 
 export function selectTotals(state) {
   const totalPurchaseQuantity = state.transactions
-    .filter((t) => t.type === 'purchase')
+    .filter((t) => t.type === 'purchase' && !t.isOpeningStock)
     .reduce((sum, t) => sum + (t.quantity || 0), 0);
+
   const totalPurchaseValue = state.transactions
-    .filter((t) => t.type === 'purchase')
+    .filter((t) => t.type === 'purchase' && !t.isOpeningStock)
     .reduce((sum, t) => sum + (t.amount || 0), 0);
+
   const totalSalesValue = state.transactions
     .filter((t) => t.type === 'sale')
     .reduce((sum, t) => sum + (t.amount || 0), 0);
-  const totalExpenses = state.expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+  const totalExpenses = state.expenses.reduce(
+    (sum, e) => sum + (e.amount || 0),
+    0
+  );
+
   return {
     memberCount: state.members.length,
     totalPurchaseQuantity,
     totalPurchaseValue,
     totalSalesValue,
     totalExpenses,
-    totalStock: selectInventory(state).reduce((sum, i) => sum + i.quantity, 0),
+    totalStock: selectInventory(state).reduce(
+      (sum, i) => sum + i.quantity,
+      0
+    ),
   };
 }
 
