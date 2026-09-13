@@ -4,7 +4,7 @@ import AppLayout from '../../components/layout/AppLayout';
 import { PageHeader } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import { useDataStore, selectStockFor } from '../../store/DataContext';
+import { useDataStore, selectStockFor, validateDataAction } from '../../store/DataContext';
 import { WASTE_TYPES, getWasteType, MOCK_BUYERS } from '../../data/wasteTypes';
 import { formatCurrency, formatNumber } from '../../utils/format';
 
@@ -40,12 +40,14 @@ export default function Sale() {
       return;
     }
 
-    try {
-      dispatch({ type: 'ADD_SALE', payload: { buyer, wasteTypeId, quantity: qtyNum } });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'ไม่สามารถบันทึกการขายได้');
+    const action = { type: 'ADD_SALE', payload: { buyer, wasteTypeId, quantity: qtyNum } };
+    const validationError = validateDataAction(state, action);
+    if (validationError) {
+      setError(validationError);
       return;
     }
+
+    dispatch(action);
     setSuccess(`บันทึกการขาย${wasteType.name}ให้ ${buyer} เรียบร้อยแล้ว มูลค่า ${formatCurrency(total)}`);
     resetForm();
     setTimeout(() => setSuccess(''), 4000);
