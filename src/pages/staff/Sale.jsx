@@ -40,7 +40,12 @@ export default function Sale() {
       return;
     }
 
-    dispatch({ type: 'ADD_SALE', payload: { buyer, wasteTypeId, quantity: qtyNum } });
+    try {
+      dispatch({ type: 'ADD_SALE', payload: { buyer, wasteTypeId, quantity: qtyNum } });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'ไม่สามารถบันทึกการขายได้');
+      return;
+    }
     setSuccess(`บันทึกการขาย${wasteType.name}ให้ ${buyer} เรียบร้อยแล้ว มูลค่า ${formatCurrency(total)}`);
     resetForm();
     setTimeout(() => setSuccess(''), 4000);
