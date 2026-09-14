@@ -11,6 +11,7 @@ import {
 import { formatCurrency, formatDate, formatNumber } from '../../utils/format';
 
 const TYPE_LABEL = { purchase: 'รับซื้อ', withdrawal: 'ถอนเงิน' };
+const MEMBER_TYPE_LABEL = { student: 'นักเรียน', community: 'สมาชิกชุมชน' };
 
 export default function MemberDetail() {
   const { id } = useParams();
@@ -65,13 +66,19 @@ export default function MemberDetail() {
 
       <PageHeader
         title={`${member.name} (${member.id})`}
-        description={`เบอร์โทรศัพท์: ${member.phone}`}
+        description={`ประเภทสมาชิก: ${MEMBER_TYPE_LABEL[member.memberType] || MEMBER_TYPE_LABEL.community} • เบอร์โทรศัพท์: ${member.phone}`}
       />
 
       <div className="section">
         <div className="stat-grid">
           <StatCard label="ยอดเงินคงเหลือปัจจุบัน" value={formatCurrency(balance)} />
           <StatCard label="จำนวนธุรกรรมทั้งหมด" value={formatNumber(transactions.length)} unit="รายการ" />
+          {member.memberType === 'student' && (
+            <>
+              <StatCard label="รหัสนักเรียน" value={member.studentId || '-'} />
+              <StatCard label="ระดับชั้น" value={member.gradeLevel || '-'} />
+            </>
+          )}
         </div>
       </div>
 

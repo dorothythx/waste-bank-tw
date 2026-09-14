@@ -3,12 +3,54 @@
 // disagree between pages.
 
 export const INITIAL_MEMBERS = [
-  { id: 'TW001', name: 'ณัฐวุฒิ ใจดี', phone: '081-234-5671' },
-  { id: 'TW002', name: 'พิมพ์ชนก แสงทอง', phone: '081-234-5672' },
-  { id: 'TW003', name: 'ธีรภัทร ศรีสุข', phone: '081-234-5673' },
-  { id: 'TW004', name: 'กมลชนก บุญมี', phone: '081-234-5674' },
-  { id: 'TW005', name: 'สุพิชญา รักเรียน', phone: '081-234-5675' },
-  { id: 'TW006', name: 'อดิศักดิ์ ทองแท้', phone: '081-234-5676' },
+  {
+    id: 'TW001',
+    name: 'ณัฐวุฒิ ใจดี',
+    phone: '081-234-5671',
+    memberType: 'student',
+    studentId: '65001',
+    gradeLevel: 'ม.5/1',
+  },
+  {
+    id: 'TW002',
+    name: 'พิมพ์ชนก แสงทอง',
+    phone: '081-234-5672',
+    memberType: 'student',
+    studentId: '65002',
+    gradeLevel: 'ม.5/1',
+  },
+  {
+    id: 'TW003',
+    name: 'ธีรภัทร ศรีสุข',
+    phone: '081-234-5673',
+    memberType: 'student',
+    studentId: '65003',
+    gradeLevel: 'ม.4/2',
+  },
+  {
+    id: 'TW004',
+    name: 'กมลชนก บุญมี',
+    phone: '081-234-5674',
+    memberType: 'student',
+    studentId: '65004',
+    gradeLevel: 'ม.3/1',
+  },
+  {
+    id: 'TW005',
+    name: 'สุพิชญา รักเรียน',
+    phone: '081-234-5675',
+    memberType: 'community',
+    studentId: null,
+    gradeLevel: null,
+  },
+  {
+    id: 'TW006',
+    name: 'อดิศักดิ์ ทองแท้',
+    phone: '081-234-5676',
+    memberType: 'community',
+    studentId: null,
+    gradeLevel: null,
+  },
 ];
 
 const day = (offset) => {

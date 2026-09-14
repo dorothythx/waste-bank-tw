@@ -7,8 +7,11 @@ import Table from '../../components/ui/Table';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
+import Badge from '../../components/ui/Badge';
 import { useDataStore, selectMembersWithBalance } from '../../store/DataContext';
 import { formatCurrency } from '../../utils/format';
+
+const MEMBER_TYPE_LABEL = { student: 'นักเรียน', community: 'สมาชิกชุมชน' };
 
 export default function Members() {
   const { state, dispatch } = useDataStore();
@@ -19,6 +22,9 @@ export default function Members() {
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [memberType, setMemberType] = useState('student');
+  const [studentId, setStudentId] = useState('');
+  const [gradeLevel, setGradeLevel] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -26,13 +32,19 @@ export default function Members() {
     const q = query.trim().toLowerCase();
     if (!q) return members;
     return members.filter(
-      (m) => m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)
+      (m) =>
+        m.id.toLowerCase().includes(q) ||
+        m.name.toLowerCase().includes(q) ||
+        (m.studentId || '').toLowerCase().includes(q)
     );
   }, [members, query]);
 
   const openAdd = () => {
     setName('');
     setPhone('');
+    setMemberType('student');
+    setStudentId('');
+    setGradeLevel('');
     setError('');
     setShowAdd(true);
   };
@@ -47,7 +59,27 @@ export default function Members() {
       setError('กรุณากรอกเบอร์โทรศัพท์');
       return;
     }
-    dispatch({ type: 'ADD_MEMBER', payload: { name: name.trim(), phone: phone.trim() } });
+    if (memberType === 'student') {
+      if (!studentId.trim()) {
+        setError('กรุณากรอกรหัสนักเรียน');
+        return;
+      }
+      if (!gradeLevel.trim()) {
+        setError('กรุณากรอกระดับชั้น');
+        return;
+      }
+    }
+
+    dispatch({
+      type: 'ADD_MEMBER',
+      payload: {
+        name: name.trim(),
+        phone: phone.trim(),
+        memberType,
+        studentId: memberType === 'student' ? studentId.trim() : null,
+        gradeLevel: memberType === 'student' ? gradeLevel.trim() : null,
+      },
+    });
     setShowAdd(false);
     setSuccess(`เพิ่มสมาชิก "${name.trim()}" เรียบร้อยแล้ว`);
     setTimeout(() => setSuccess(''), 3500);
@@ -56,6 +88,15 @@ export default function Members() {
   const columns = [
     { key: 'id', header: 'รหัสสมาชิก' },
     { key: 'name', header: 'ชื่อสมาชิก' },
+    {
+      key: 'memberType',
+      header: 'ประเภทสมาชิก',
+      render: (r) => (
+        <Badge tone={r.memberType === 'student' ? 'green' : 'gray'}>
+          {MEMBER_TYPE_LABEL[r.memberType] || MEMBER_TYPE_LABEL.community}
+        </Badge>
+      ),
+    },
     { key: 'phone', header: 'เบอร์โทรศัพท์' },
     {
       key: 'balance',
@@ -85,7 +126,7 @@ export default function Members() {
           <Search size={16} style={{ position: 'absolute', left: 12, top: 12, color: 'var(--gray-400)' }} />
           <input
             style={{ paddingLeft: 36 }}
-            placeholder="ค้นหาด้วยรหัสสมาชิกหรือชื่อ"
+            placeholder="ค้นหาด้วยรหัสสมาชิก ชื่อ หรือรหัสนักเรียน"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -111,6 +152,39 @@ export default function Members() {
             <label htmlFor="member-name">ชื่อสมาชิก</label>
             <input id="member-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="เช่น สมชาย ใจดี" />
           </div>
+          <div className="field">
+            <label htmlFor="member-type">ประเภทสมาชิก</label>
+            <select
+              id="member-type"
+              value={memberType}
+              onChange={(e) => setMemberType(e.target.value)}
+            >
+              <option value="student">นักเรียน</option>
+              <option value="community">สมาชิกชุมชน</option>
+            </select>
+          </div>
+          {memberType === 'student' && (
+            <>
+              <div className="field">
+                <label htmlFor="member-student-id">รหัสนักเรียน</label>
+                <input
+                  id="member-student-id"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  placeholder="เช่น 65001"
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="member-grade-level">ระดับชั้น</label>
+                <input
+                  id="member-grade-level"
+                  value={gradeLevel}
+                  onChange={(e) => setGradeLevel(e.target.value)}
+                  placeholder="เช่น ม.5/1"
+                />
+              </div>
+            </>
+          )}
           <div className="field">
             <label htmlFor="member-phone">เบอร์โทรศัพท์</label>
             <input id="member-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="เช่น 081-234-5678" />

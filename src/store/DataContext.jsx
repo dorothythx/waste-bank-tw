@@ -10,15 +10,36 @@ import { todayIso } from '../utils/format';
 
 const STORAGE_KEY = 'watebank_prototype_data_v1';
 
+// Backward compatibility: any member record (old localStorage data or old
+// mock data) that predates memberType/studentId/gradeLevel gets safe
+// defaults here. Nothing about member.id is ever touched, so existing
+// transaction.memberId references keep matching.
+function normalizeMember(member) {
+  const memberType = member.memberType === 'student' ? 'student' : 'community';
+  return {
+    ...member,
+    memberType,
+    studentId: memberType === 'student' ? member.studentId ?? null : null,
+    gradeLevel: memberType === 'student' ? member.gradeLevel ?? null : null,
+  };
+}
+
+function normalizeMembers(members) {
+  return (members || []).map(normalizeMember);
+}
+
 function loadInitialState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...parsed, members: normalizeMembers(parsed.members) };
+    }
   } catch (err) {
     console.warn('ไม่สามารถโหลดข้อมูลจาก LocalStorage ได้', err);
   }
   return {
-    members: INITIAL_MEMBERS,
+    members: normalizeMembers(INITIAL_MEMBERS),
     transactions: INITIAL_TRANSACTIONS,
     expenses: INITIAL_EXPENSES,
   };
@@ -32,6 +53,27 @@ function getMemberBalanceFromTx(transactions, memberId) {
 
 export function validateDataAction(state, action) {
   switch (action.type) {
+    case 'ADD_MEMBER': {
+      const { name, phone, memberType, studentId, gradeLevel } = action.payload;
+      const nameValid = typeof name === 'string' && name.trim() !== '';
+      const phoneValid = typeof phone === 'string' && phone.trim() !== '';
+      const memberTypeValid = memberType === 'student' || memberType === 'community';
+
+      if (!nameValid || !phoneValid || !memberTypeValid) {
+        return 'ข้อมูลสมาชิกไม่ถูกต้อง';
+      }
+
+      if (memberType === 'student') {
+        const studentIdValid = typeof studentId === 'string' && studentId.trim() !== '';
+        const gradeLevelValid = typeof gradeLevel === 'string' && gradeLevel.trim() !== '';
+        if (!studentIdValid || !gradeLevelValid) {
+          return 'กรุณากรอกรหัสนักเรียนและระดับชั้น';
+        }
+      }
+
+      return '';
+    }
+
     case 'ADD_PURCHASE': {
       const { memberId, items } = action.payload;
       const memberExists = state.members.some((member) => member.id === memberId);
@@ -105,8 +147,21 @@ export function validateDataAction(state, action) {
 function reducer(state, action) {
   switch (action.type) {
     case 'ADD_MEMBER': {
+      const validationError = validateDataAction(state, action);
+      if (validationError) {
+        throw new Error(validationError);
+      }
+
       const id = nextMemberId(state.members);
-      const member = { id, name: action.payload.name, phone: action.payload.phone };
+      const memberType = action.payload.memberType === 'student' ? 'student' : 'community';
+      const member = {
+        id,
+        name: action.payload.name,
+        phone: action.payload.phone,
+        memberType,
+        studentId: memberType === 'student' ? action.payload.studentId : null,
+        gradeLevel: memberType === 'student' ? action.payload.gradeLevel : null,
+      };
       return { ...state, members: [...state.members, member] };
     }
     case 'ADD_PURCHASE': {
@@ -219,7 +274,7 @@ function reducer(state, action) {
     }
     case 'RESET_DATA': {
       return {
-        members: INITIAL_MEMBERS,
+        members: normalizeMembers(INITIAL_MEMBERS),
         transactions: INITIAL_TRANSACTIONS,
         expenses: INITIAL_EXPENSES,
       };
