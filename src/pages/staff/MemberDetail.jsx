@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Copy, Check } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import { PageHeader, StatCard } from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
+import Alert from '../../components/ui/Alert';
 import {
   useDataStore,
   selectMemberBalance,
@@ -20,6 +22,8 @@ export default function MemberDetail() {
   const member = state.members.find((m) => m.id === id);
   const balance = member ? selectMemberBalance(state, id) : 0;
   const transactions = member ? selectMemberTransactions(state, id) : [];
+  const [copyMessage, setCopyMessage] = useState('');
+  const [copyError, setCopyError] = useState('');
 
   if (!member) {
     return (
@@ -33,6 +37,30 @@ export default function MemberDetail() {
       </AppLayout>
     );
   }
+
+  const handleCopyPhone = async () => {
+    setCopyError('');
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(member.phone);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = member.phone;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (!ok) throw new Error('copy command failed');
+      }
+      setCopyMessage('คัดลอกเบอร์โทรศัพท์แล้ว');
+      setTimeout(() => setCopyMessage(''), 2500);
+    } catch {
+      setCopyError('ไม่สามารถคัดลอกเบอร์โทรศัพท์ได้ กรุณาคัดลอกด้วยตนเอง');
+      setTimeout(() => setCopyError(''), 3500);
+    }
+  };
 
   const columns = [
     { key: 'date', header: 'วันที่', render: (r) => formatDate(r.date) },
@@ -66,8 +94,29 @@ export default function MemberDetail() {
 
       <PageHeader
         title={`${member.name} (${member.id})`}
-        description={`ประเภทสมาชิก: ${MEMBER_TYPE_LABEL[member.memberType] || MEMBER_TYPE_LABEL.community} • เบอร์โทรศัพท์: ${member.phone}`}
+        description={`ประเภทสมาชิก: ${MEMBER_TYPE_LABEL[member.memberType] || MEMBER_TYPE_LABEL.community}`}
       />
+
+      {copyMessage && <Alert type="success">{copyMessage}</Alert>}
+      {copyError && <Alert type="error">{copyError}</Alert>}
+
+      <div className="section">
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label>เบอร์โทรศัพท์</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontWeight: 600 }}>{member.phone}</span>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              aria-label="คัดลอกเบอร์โทรศัพท์"
+              onClick={handleCopyPhone}
+            >
+              {copyMessage ? <Check size={14} /> : <Copy size={14} />}
+              คัดลอก
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="section">
         <div className="stat-grid">

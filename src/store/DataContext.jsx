@@ -6,7 +6,7 @@ import {
 } from '../data/mockData';
 import { WASTE_TYPES, getWasteType, MOCK_BUYERS } from '../data/wasteTypes';
 import { nextMemberId, nextEntityId } from '../utils/idGenerator';
-import { todayIso } from '../utils/format';
+import { todayIso, isValidPhoneDigits, normalizePhoneNumber } from '../utils/format';
 
 const STORAGE_KEY = 'watebank_prototype_data_v1';
 
@@ -33,7 +33,11 @@ function loadInitialState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      return { ...parsed, members: normalizeMembers(parsed.members) };
+      return {
+        ...parsed,
+        members: normalizeMembers(parsed.members),
+        deletedMemberIds: Array.isArray(parsed.deletedMemberIds) ? parsed.deletedMemberIds : [],
+      };
     }
   } catch (err) {
     console.warn('ไม่สามารถโหลดข้อมูลจาก LocalStorage ได้', err);
@@ -42,6 +46,7 @@ function loadInitialState() {
     members: normalizeMembers(INITIAL_MEMBERS),
     transactions: INITIAL_TRANSACTIONS,
     expenses: INITIAL_EXPENSES,
+    deletedMemberIds: [],
   };
 }
 
@@ -56,10 +61,16 @@ export function validateDataAction(state, action) {
     case 'ADD_MEMBER': {
       const { name, phone, memberType, studentId, gradeLevel } = action.payload;
       const nameValid = typeof name === 'string' && name.trim() !== '';
-      const phoneValid = typeof phone === 'string' && phone.trim() !== '';
+      const phoneValid = isValidPhoneDigits(phone);
       const memberTypeValid = memberType === 'student' || memberType === 'community';
 
-      if (!nameValid || !phoneValid || !memberTypeValid) {
+      if (!nameValid) {
+        return 'กรุณากรอกชื่อสมาชิก';
+      }
+      if (!phoneValid) {
+        return 'กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก';
+      }
+      if (!memberTypeValid) {
         return 'ข้อมูลสมาชิกไม่ถูกต้อง';
       }
 
@@ -69,6 +80,21 @@ export function validateDataAction(state, action) {
         if (!studentIdValid || !gradeLevelValid) {
           return 'กรุณากรอกรหัสนักเรียนและระดับชั้น';
         }
+      }
+
+      return '';
+    }
+
+    case 'DELETE_MEMBER': {
+      const { memberId } = action.payload;
+      const member = state.members.find((m) => m.id === memberId);
+      if (!member) {
+        return 'ไม่พบสมาชิกที่ต้องการลบ';
+      }
+
+      const hasTransactions = state.transactions.some((t) => t.memberId === memberId);
+      if (hasTransactions) {
+        return 'ไม่สามารถลบสมาชิกที่มีประวัติธุรกรรมได้ เพื่อป้องกันข้อมูลประวัติสูญหาย';
       }
 
       return '';
@@ -152,17 +178,36 @@ function reducer(state, action) {
         throw new Error(validationError);
       }
 
-      const id = nextMemberId(state.members);
+      // Include deleted member IDs in the pool nextMemberId scans so a
+      // removed member's number is never handed out again.
+      const idPool = [
+        ...state.members,
+        ...(state.deletedMemberIds || []).map((id) => ({ id })),
+      ];
+      const id = nextMemberId(idPool);
       const memberType = action.payload.memberType === 'student' ? 'student' : 'community';
       const member = {
         id,
         name: action.payload.name,
-        phone: action.payload.phone,
+        phone: normalizePhoneNumber(action.payload.phone),
         memberType,
         studentId: memberType === 'student' ? action.payload.studentId : null,
         gradeLevel: memberType === 'student' ? action.payload.gradeLevel : null,
       };
       return { ...state, members: [...state.members, member] };
+    }
+    case 'DELETE_MEMBER': {
+      const validationError = validateDataAction(state, action);
+      if (validationError) {
+        throw new Error(validationError);
+      }
+
+      const { memberId } = action.payload;
+      return {
+        ...state,
+        members: state.members.filter((m) => m.id !== memberId),
+        deletedMemberIds: [...(state.deletedMemberIds || []), memberId],
+      };
     }
     case 'ADD_PURCHASE': {
       // payload: { memberId, items: [{ wasteTypeId, quantity }] }
@@ -277,6 +322,7 @@ function reducer(state, action) {
         members: normalizeMembers(INITIAL_MEMBERS),
         transactions: INITIAL_TRANSACTIONS,
         expenses: INITIAL_EXPENSES,
+        deletedMemberIds: [],
       };
     }
     default:

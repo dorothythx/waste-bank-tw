@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, UserPlus } from 'lucide-react';
+import { Search, UserPlus, Trash2 } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import { PageHeader } from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
@@ -8,8 +8,8 @@ import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Badge from '../../components/ui/Badge';
-import { useDataStore, selectMembersWithBalance } from '../../store/DataContext';
-import { formatCurrency } from '../../utils/format';
+import { useDataStore, selectMembersWithBalance, validateDataAction } from '../../store/DataContext';
+import { formatCurrency, formatPhoneInput, isValidPhoneDigits, normalizePhoneNumber } from '../../utils/format';
 
 const MEMBER_TYPE_LABEL = { student: 'นักเรียน', community: 'สมาชิกชุมชน' };
 
@@ -27,6 +27,9 @@ export default function Members() {
   const [gradeLevel, setGradeLevel] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -59,6 +62,10 @@ export default function Members() {
       setError('กรุณากรอกเบอร์โทรศัพท์');
       return;
     }
+    if (!isValidPhoneDigits(phone)) {
+      setError('กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก');
+      return;
+    }
     if (memberType === 'student') {
       if (!studentId.trim()) {
         setError('กรุณากรอกรหัสนักเรียน');
@@ -74,7 +81,7 @@ export default function Members() {
       type: 'ADD_MEMBER',
       payload: {
         name: name.trim(),
-        phone: phone.trim(),
+        phone: normalizePhoneNumber(phone),
         memberType,
         studentId: memberType === 'student' ? studentId.trim() : null,
         gradeLevel: memberType === 'student' ? gradeLevel.trim() : null,
@@ -83,6 +90,32 @@ export default function Members() {
     setShowAdd(false);
     setSuccess(`เพิ่มสมาชิก "${name.trim()}" เรียบร้อยแล้ว`);
     setTimeout(() => setSuccess(''), 3500);
+  };
+
+  const openDelete = (member) => {
+    setDeleteTarget(member);
+    setDeleteError('');
+  };
+
+  const closeDelete = () => {
+    setDeleteTarget(null);
+    setDeleteError('');
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    const action = { type: 'DELETE_MEMBER', payload: { memberId: deleteTarget.id } };
+    const validationError = validateDataAction(state, action);
+    if (validationError) {
+      setDeleteError(validationError);
+      return;
+    }
+
+    dispatch(action);
+    setSuccess(`ลบสมาชิก "${deleteTarget.name}" เรียบร้อยแล้ว`);
+    setTimeout(() => setSuccess(''), 3500);
+    setDeleteTarget(null);
+    setDeleteError('');
   };
 
   const columns = [
@@ -103,6 +136,25 @@ export default function Members() {
       header: 'ยอดเงินคงเหลือ',
       align: 'right',
       render: (r) => formatCurrency(r.balance),
+    },
+    {
+      key: 'actions',
+      header: 'การดำเนินการ',
+      align: 'right',
+      render: (r) => (
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          aria-label={`ลบสมาชิก ${r.name}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            openDelete(r);
+          }}
+        >
+          <Trash2 size={14} />
+          ลบ
+        </button>
+      ),
     },
   ];
 
@@ -187,7 +239,14 @@ export default function Members() {
           )}
           <div className="field">
             <label htmlFor="member-phone">เบอร์โทรศัพท์</label>
-            <input id="member-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="เช่น 081-234-5678" />
+            <input
+              id="member-phone"
+              value={phone}
+              onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+              placeholder="เช่น 081-234-5678"
+              inputMode="numeric"
+              maxLength={12}
+            />
           </div>
           <div className="field">
             <label>ยอดเงินเริ่มต้น</label>
@@ -201,6 +260,22 @@ export default function Members() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={!!deleteTarget} title="ยืนยันการลบสมาชิก" onClose={closeDelete}>
+        {deleteError && <Alert type="error">{deleteError}</Alert>}
+        <p style={{ marginBottom: 16, color: 'var(--gray-700)' }}>
+          ต้องการลบสมาชิก "{deleteTarget?.name}" ({deleteTarget?.id}) ใช่หรือไม่ การลบไม่สามารถย้อนกลับได้
+        </p>
+        <div className="form-actions">
+          <Button variant="danger" onClick={handleConfirmDelete}>
+            <Trash2 size={16} />
+            ยืนยันลบ
+          </Button>
+          <Button type="button" variant="secondary" onClick={closeDelete}>
+            ยกเลิก
+          </Button>
+        </div>
       </Modal>
     </AppLayout>
   );
