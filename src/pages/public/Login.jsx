@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Recycle, ArrowLeft, UserCog, GraduationCap, Info } from 'lucide-react';
+import { ArrowLeft, UserCog, GraduationCap, Info } from 'lucide-react';
 import { useAuth } from '../../store/AuthContext';
 import { useDataStore, selectMembersWithBalance } from '../../store/DataContext';
 import Button from '../../components/ui/Button';
@@ -33,7 +33,7 @@ export default function Login() {
           กลับหน้าแรก
         </Link>
         <div className="login-brand">
-          <Recycle size={30} color="var(--green-600)" style={{ margin: '0 auto' }} />
+          <img src="/taelsiri-logo.png" alt="ตราโรงเรียนแตลศิริวิทยา" className="brand-logo" />
           <div className="name">ธนาคารขยะโรงเรียนแตลศิริวิทยา</div>
         </div>
 

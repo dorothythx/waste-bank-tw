@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import {
-  Recycle,
   ArrowRight,
   Leaf,
   Coins,
@@ -55,7 +54,7 @@ export default function Home() {
       <header className="public-header">
         <div className="container public-header-inner">
           <div className="public-brand">
-            <Recycle size={22} color="#2e8b57" />
+            <img src="/taelsiri-logo.png" alt="ตราโรงเรียนแตลศิริวิทยา" className="brand-logo" />
             ธนาคารขยะแตลศิริวิทยา
           </div>
           <Link to="/login">
@@ -228,7 +227,10 @@ export default function Home() {
 
       <footer className="site-footer">
         <div className="container">
-          <div className="foot-title">ธนาคารขยะโรงเรียนแตลศิริวิทยา</div>
+          <div className="foot-brand">
+            <img src="/taelsiri-logo.png" alt="ตราโรงเรียนแตลศิริวิทยา" className="brand-logo" />
+            <div className="foot-title">ธนาคารขยะโรงเรียนแตลศิริวิทยา</div>
+          </div>
           <p>ระบบต้นแบบ (Prototype) สำหรับนำเสนอแนวทางการพัฒนาระบบธนาคารขยะของโรงเรียน</p>
           <p>ข้อมูลทั้งหมดเป็นข้อมูลจำลอง (Mock Data) สำหรับการนำเสนอ Prototype ไม่ใช่ธุรกรรมจริง</p>
         </div>

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Recycle, LogOut, RefreshCcw } from 'lucide-react';
+import { LogOut, RefreshCcw } from 'lucide-react';
 import { STAFF_NAV, MEMBER_NAV } from '../../data/navigation';
 import { useAuth } from '../../store/AuthContext';
 
@@ -13,7 +13,7 @@ export default function Sidebar({ open, onClose }) {
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <div className="sidebar-brand">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Recycle size={22} color="#4aa872" />
+            <img src="/taelsiri-logo.png" alt="ตราโรงเรียนแตลศิริวิทยา" className="brand-logo" />
             <span className="name">ธนาคารขยะ<br />โรงเรียนแตลศิริวิทยา</span>
           </div>
           <div className="sub">{session.role === 'staff' ? 'โหมดเจ้าหน้าที่ (Demo)' : 'โหมดสมาชิก (Demo)'}</div>

@@ -441,6 +441,16 @@ input:disabled, select:disabled {
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.brand-logo {
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.sidebar-brand .brand-logo {
+  height: 32px;
+  width: 32px;
+}
+
 .sidebar-brand .name {
   font-family: var(--font-display);
   font-weight: 600;
@@ -614,6 +624,11 @@ input:disabled, select:disabled {
   font-family: var(--font-display);
   font-weight: 600;
   color: var(--green-900);
+}
+
+.public-brand .brand-logo {
+  height: 30px;
+  width: 30px;
 }
 
 .hero {
@@ -836,11 +851,23 @@ footer.site-footer {
   font-size: 0.86rem;
 }
 
+footer.site-footer .foot-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+footer.site-footer .brand-logo {
+  height: 26px;
+  width: 26px;
+}
+
 footer.site-footer .foot-title {
   font-family: var(--font-display);
   color: var(--white);
   font-size: 1rem;
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 footer.site-footer p {
@@ -880,6 +907,13 @@ footer.site-footer p {
 .login-brand {
   text-align: center;
   margin-bottom: 20px;
+}
+
+.login-brand .brand-logo {
+  height: 64px;
+  width: 64px;
+  margin: 0 auto;
+  display: block;
 }
 
 .login-brand .name {
